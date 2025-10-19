@@ -4,20 +4,27 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use components::*;
 
 mod base;
+mod coal;
 mod components;
+mod copper;
 mod gold;
+mod iron;
 mod player;
 mod rock;
 mod stats;
+mod trades;
 
 const PLAYER_SPRITE: &str = "player.png";
 const GOLD_SPRITE: &str = "gold.png";
+const IRON_SPRITE: &str = "iron.png";
+const COPPER_SPRITE: &str = "copper.png";
+const COAL_SPRITE: &str = "coal.png";
 const STATS_SPRITE: &str = "stats.png";
 const BASE_SPRITE: &str = "base.png";
 const ROCK1_SPRITE: &str = "rock1.png";
 const ROCK2_SPRITE: &str = "rock2.png";
 const ROCK3_SPRITE: &str = "rock3.png";
-const ROCK4_SPRITE: &str = "rock5.png";
+const ROCK4_SPRITE: &str = "rock4.png";
 
 const PLAYER_SIZE: (f32, f32) = (14.0, 13.0);
 const BASE_SIZE: (f32, f32) = (30.0, 20.0);
@@ -31,7 +38,10 @@ const SPRITE_SCALE: f32 = 2.0;
 const BASE_SPEED: f32 = 100.0;
 
 const MAX_ROCKS: usize = 70;
-const MAX_GOLD: usize = 10;
+const MAX_GOLD: usize = 1;
+const MAX_IRON: usize = 3;
+const MAX_COPPER: usize = 3;
+const MAX_COAL: usize = 3;
 
 const MAX_SHIP_STORAGE: u32 = 10;
 const MAX_BASE_STORAGE: u32 = 100;
@@ -47,6 +57,9 @@ struct GameTextures {
     player: Handle<Image>,
     base: Handle<Image>,
     gold: Handle<Image>,
+    iron: Handle<Image>,
+    copper: Handle<Image>,
+    coal: Handle<Image>,
     stats: Handle<Image>,
     rock1: Handle<Image>,
     rock2: Handle<Image>,
@@ -91,7 +104,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Space Scavenger".into(),
+                title: "Spacy Trade".into(),
                 ..Default::default()
             }),
             ..Default::default()
@@ -101,6 +114,10 @@ fn main() {
         .add_plugins(rock::RockPlugin)
         .add_plugins(stats::StatsPlugin)
         .add_plugins(gold::GoldPlugin)
+        .add_plugins(iron::IronPlugin)
+        .add_plugins(copper::CopperPlugin)
+        .add_plugins(coal::CoalPlugin)
+        .add_plugins(trades::TradesPlugin)
         .add_systems(Startup, setup)
         .add_systems(Update, movement)
         .run();
@@ -125,6 +142,9 @@ fn setup(
         player: asset_server.load(PLAYER_SPRITE),
         base: asset_server.load(BASE_SPRITE),
         gold: asset_server.load(GOLD_SPRITE),
+        iron: asset_server.load(IRON_SPRITE),
+        copper: asset_server.load(COPPER_SPRITE),
+        coal: asset_server.load(COAL_SPRITE),
         stats: asset_server.load(STATS_SPRITE),
         rock1: asset_server.load(ROCK1_SPRITE),
         rock2: asset_server.load(ROCK2_SPRITE),

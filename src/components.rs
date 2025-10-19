@@ -13,6 +13,15 @@ pub struct Rock;
 pub struct Gold;
 
 #[derive(Component)]
+pub struct Iron;
+
+#[derive(Component)]
+pub struct Copper;
+
+#[derive(Component)]
+pub struct Coal;
+
+#[derive(Component)]
 pub struct Stats;
 
 #[derive(Component)]
@@ -23,6 +32,33 @@ pub struct BaseStorageUi;
 
 #[derive(Component)]
 pub struct PlayerCashUi;
+
+#[derive(Component)]
+pub struct Trade1;
+
+#[derive(Component)]
+pub struct Trade2;
+
+#[derive(Component)]
+pub struct Trade3;
+
+#[derive(Component)]
+pub struct Trade4;
+
+#[derive(Component)]
+pub struct Trade5;
+
+#[derive(Component)]
+pub struct Trade6;
+
+#[derive(Component)]
+pub struct Trade7;
+
+#[derive(Component)]
+pub struct Trade8;
+
+#[derive(Component)]
+pub struct Trade9;
 
 #[derive(Component)]
 pub struct Velocity {

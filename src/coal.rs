@@ -4,24 +4,24 @@ use bevy::{
 };
 
 use crate::{
-    GOLD_SIZE, GameTextures, MAX_GOLD, SPRITE_SCALE, WinSize,
-    components::{Base, Gold, Movable, SpriteSize, Velocity},
+    GOLD_SIZE, GameTextures, MAX_COAL, SPRITE_SCALE, WinSize,
+    components::{Base, Coal, Movable, SpriteSize, Velocity},
 };
 
-pub struct GoldPlugin;
-impl Plugin for GoldPlugin {
+pub struct CoalPlugin;
+impl Plugin for CoalPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (gold_movement, gold_spawn));
+        app.add_systems(Update, (coal_movement, coal_spawn));
     }
 }
 
-fn gold_spawn(
+fn coal_spawn(
     mut commands: Commands,
     game_textures: Res<GameTextures>,
     win_size: Res<WinSize>,
-    gold_query: Query<&Gold>,
+    coal_query: Query<&Coal>,
 ) {
-    if gold_query.iter().len() >= MAX_GOLD {
+    if coal_query.iter().len() >= MAX_COAL {
         return;
     }
 
@@ -37,14 +37,14 @@ fn gold_spawn(
 
     commands
         .spawn((
-            Sprite::from_image(game_textures.gold.clone()),
+            Sprite::from_image(game_textures.coal.clone()),
             Transform {
                 translation: target_position,
                 scale: Vec3::new(SPRITE_SCALE, SPRITE_SCALE, 1.),
                 ..Default::default()
             },
         ))
-        .insert(Gold)
+        .insert(Coal)
         .insert(Movable { auto_despawn: true })
         .insert(Velocity {
             x: x / 10000.0,
@@ -53,30 +53,30 @@ fn gold_spawn(
         .insert(SpriteSize::from(GOLD_SIZE));
 }
 
-// move gold slowly
+// move coal slowly
 // despawn when colliding with base
-fn gold_movement(
+fn coal_movement(
     mut commands: Commands,
     base_query: Query<(&Transform, &SpriteSize), With<Base>>,
-    gold_query: Query<(Entity, &Transform, &SpriteSize), With<Gold>>,
+    coal_query: Query<(Entity, &Transform, &SpriteSize), With<Coal>>,
 ) {
     if let Ok((base_tf, base_size)) = base_query.single() {
         let base_scale = Vec2::from(base_tf.scale.xy());
 
-        for (gold, gold_tf, gold_size) in gold_query {
-            let gold_scale = Vec2::from(gold_tf.scale.xy());
+        for (coal, coal_tf, coal_size) in coal_query {
+            let coal_scale = Vec2::from(coal_tf.scale.xy());
 
             let collision = Aabb2d::new(
                 base_tf.translation.truncate(),
                 base_size.0 * 2.0 * base_scale,
             )
             .intersects(&Aabb2d::new(
-                gold_tf.translation.truncate(),
-                gold_size.0 * gold_scale,
+                coal_tf.translation.truncate(),
+                coal_size.0 * coal_scale,
             ));
 
             if collision {
-                commands.entity(gold).despawn();
+                commands.entity(coal).despawn();
             }
         }
     }
