@@ -116,12 +116,28 @@ fn player_movement(
         // vertical movement
         if w || up {
             y = 1.0;
-            let new_rotation = Quat::from_rotation_z((0.0_f32).to_radians());
-            player_tf.rotation = new_rotation;
+            if a || left {
+                let new_rotation = Quat::from_rotation_z((45.0_f32).to_radians());
+                player_tf.rotation = new_rotation;
+            } else if d || right {
+                let new_rotation = Quat::from_rotation_z((315.0_f32).to_radians());
+                player_tf.rotation = new_rotation;
+            } else {
+                let new_rotation = Quat::from_rotation_z((0.0_f32).to_radians());
+                player_tf.rotation = new_rotation;
+            }
         } else if s || down {
             y = -1.0;
-            let new_rotation = Quat::from_rotation_z((180.0_f32).to_radians());
-            player_tf.rotation = new_rotation;
+            if a || left {
+                let new_rotation = Quat::from_rotation_z((135.0_f32).to_radians());
+                player_tf.rotation = new_rotation;
+            } else if d || right {
+                let new_rotation = Quat::from_rotation_z((225.0_f32).to_radians());
+                player_tf.rotation = new_rotation;
+            } else {
+                let new_rotation = Quat::from_rotation_z((180.0_f32).to_radians());
+                player_tf.rotation = new_rotation;
+            }
         }
 
         // player cannot move off screen

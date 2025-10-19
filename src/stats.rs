@@ -151,9 +151,9 @@ fn update_stats(
     ship_storage: Res<ShipStorage>,
     base_storage: Res<BaseStorage>,
     player_cash: Res<PlayerCash>,
-    mut ship_storage_ui: Single<&mut Text, (With<ShipStorageUi>, Without<BaseStorageUi>)>,
-    mut base_storage_ui: Single<&mut Text, With<BaseStorageUi>>,
-    mut player_cash_ui: Single<
+    ship_storage_ui: Single<&mut Text, (With<ShipStorageUi>, Without<BaseStorageUi>)>,
+    base_storage_ui: Single<&mut Text, With<BaseStorageUi>>,
+    player_cash_ui: Single<
         &mut Text,
         (
             With<PlayerCashUi>,
@@ -161,7 +161,7 @@ fn update_stats(
             Without<BaseStorageUi>,
         ),
     >,
-    mut gold_count: Single<
+    gold_count: Single<
         &mut Text,
         (
             With<GoldCount>,
@@ -170,7 +170,7 @@ fn update_stats(
             Without<BaseStorageUi>,
         ),
     >,
-    mut iron_count: Single<
+    iron_count: Single<
         &mut Text,
         (
             With<IronCount>,
@@ -180,7 +180,7 @@ fn update_stats(
             Without<BaseStorageUi>,
         ),
     >,
-    mut copper_count: Single<
+    copper_count: Single<
         &mut Text,
         (
             With<CopperCount>,
@@ -191,7 +191,7 @@ fn update_stats(
             Without<BaseStorageUi>,
         ),
     >,
-    mut coal_count: Single<
+    coal_count: Single<
         &mut Text,
         (
             With<CoalCount>,

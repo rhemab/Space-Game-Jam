@@ -46,31 +46,7 @@ pub struct BaseStorageUi;
 pub struct PlayerCashUi;
 
 #[derive(Component)]
-pub struct Trade1;
-
-#[derive(Component)]
-pub struct Trade2;
-
-#[derive(Component)]
-pub struct Trade3;
-
-#[derive(Component)]
-pub struct Trade4;
-
-#[derive(Component)]
-pub struct Trade5;
-
-#[derive(Component)]
-pub struct Trade6;
-
-#[derive(Component)]
-pub struct Trade7;
-
-#[derive(Component)]
-pub struct Trade8;
-
-#[derive(Component)]
-pub struct Trade9;
+pub struct Trades;
 
 #[derive(Component)]
 pub struct Velocity {
