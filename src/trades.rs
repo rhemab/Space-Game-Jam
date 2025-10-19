@@ -1,105 +1,128 @@
 use bevy::prelude::*;
+use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
 use crate::{
     BaseStorage, PlayerCash, ShipStorage,
-    components::{BaseStorageUi, PlayerCashUi, ShipStorageUi, Trades},
+    components::{BaseStorageUi, PlayerCashUi, ShipStorageUi},
 };
 
 use thousands::Separable;
 
-const RESOURCE_LIST: [(&str, f32); 5] = [
-    ("Gold", 4200.0),
-    ("Iron", 500.0),
-    ("Copper", 500.0),
-    ("Coal", 1200.0),
-    ("Galactic Credits", 1.0),
+const RESOURCE_LIST: [(&str, u32); 5] = [
+    ("Gold", 4200),
+    ("Iron", 500),
+    ("Copper", 500),
+    ("Coal", 1200),
+    ("Galactic Credits", 1),
 ];
 
+pub struct Offer {
+    title: String,
+    give: usize,
+    give_qty: u32,
+    get: u32,
+}
+
 #[derive(Resource)]
-pub struct CurrentOffers(u32);
+pub struct CurrentOffers(Vec<Offer>);
 
 pub struct TradesPlugin;
 impl Plugin for TradesPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(CurrentOffers(0))
-            .add_systems(PostStartup, trades_spawn)
-            .add_systems(Update, update_trades);
+        app.insert_resource(CurrentOffers(vec![]))
+            .add_plugins(EguiPlugin::default())
+            .add_systems(EguiPrimaryContextPass, generate_trades);
     }
 }
 
-fn trades_spawn(mut commands: Commands) {
-    commands.spawn((
-        Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            align_items: AlignItems::End,
-            justify_content: JustifyContent::End,
-            ..default()
-        },
-        children![(
-            Node {
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::SpaceAround,
-                width: Val::Px(250.0),
-                ..default()
-            },
-            BackgroundColor(Color::srgba(0.04, 0.04, 0.04, 0.8)),
-            Trades,
-        )],
-    ));
-}
-
-fn update_trades(
-    mut commands: Commands,
+fn generate_trades(
+    mut contexts: EguiContexts,
     mut offers: ResMut<CurrentOffers>,
-    trades_ui: Single<Entity, With<Trades>>,
-) {
-    // only show 6 offers at a time
-    if offers.0 < 4 {
-        // generate a random offer
-        use rand::Rng;
-        let mut rng = rand::rng();
+    mut base: ResMut<BaseStorage>,
+    mut cash: ResMut<PlayerCash>,
+) -> Result {
+    egui::Window::new("Trade").show(contexts.ctx_mut()?, |ui| {
+        // only show 6 offers at a time
+        if offers.0.len() < 10 {
+            // generate a random offer
+            use rand::Rng;
+            let mut rng = rand::rng();
 
-        let x = RESOURCE_LIST[rng.random_range(0..4)];
-        let x_qty = rng.random_range(1..10) as f32;
+            let i = rng.random_range(0..4);
+            let x = RESOURCE_LIST[i];
+            let x_qty = rng.random_range(1..10);
 
-        // y is cash
-        let y = RESOURCE_LIST[4];
-        let y_qty = x.1 * x_qty;
+            // y is cash
+            let y = RESOURCE_LIST[4];
+            let y_qty = x.1 * x_qty;
 
-        let child = commands
-            .spawn((
-                Text::new(format!(
+            let new_offer = Offer {
+                title: format!(
                     "Trade {} {} for {} {}",
                     x_qty.separate_with_commas(),
                     x.0,
                     y_qty.separate_with_commas(),
                     y.0
-                )),
-                TextFont {
-                    font_size: 13.0,
-                    ..Default::default()
-                },
-                Node {
-                    margin: UiRect::all(Val::Px(20.0)),
-                    ..default()
-                },
-            ))
-            .observe(
-                |event: On<Pointer<Click>>,
-                 mut commands: Commands,
-                 mut offers: ResMut<CurrentOffers>| {
-                    commands.entity(event.entity).despawn();
-                    offers.0 -= 1;
-                },
-            )
-            .id();
+                ),
+                give: i,
+                give_qty: x_qty,
+                get: y_qty,
+            };
 
-        commands
-            .entity(trades_ui.into_inner())
-            .add_children(&[child]);
+            offers.0.push(new_offer);
+        }
 
-        offers.0 += 1;
-    }
+        let mut to_remove = vec![];
+
+        for (i, offer) in offers.0.iter().enumerate() {
+            ui.horizontal(|ui| {
+                if ui.button("Yes").clicked() {
+                    let mut success = false;
+                    let item_to_give = RESOURCE_LIST[offer.give].0;
+                    match item_to_give {
+                        "Gold" => {
+                            if base.gold >= offer.give_qty {
+                                base.gold -= offer.give_qty;
+                                success = true;
+                            }
+                        }
+                        "Iron" => {
+                            if base.iron >= offer.give_qty {
+                                base.iron -= offer.give_qty;
+                                success = true;
+                            }
+                        }
+                        "Copper" => {
+                            if base.copper >= offer.give_qty {
+                                base.copper -= offer.give_qty;
+                                success = true;
+                            }
+                        }
+                        "Coal" => {
+                            if base.coal >= offer.give_qty {
+                                base.coal -= offer.give_qty;
+                                success = true;
+                            }
+                        }
+                        _ => {}
+                    }
+                    if success {
+                        to_remove.push(i);
+                        cash.0 += offer.get;
+                    }
+                }
+                if ui.button("No").clicked() {
+                    to_remove.push(i);
+                }
+                ui.label(&offer.title);
+            });
+            ui.separator();
+        }
+
+        // Remove items in reverse order to avoid shifting indices
+        for i in to_remove.iter().rev() {
+            offers.0.remove(*i);
+        }
+    });
+    Ok(())
 }
