@@ -25,6 +25,18 @@ pub struct Coal;
 pub struct Stats;
 
 #[derive(Component)]
+pub struct GoldCount;
+
+#[derive(Component)]
+pub struct IronCount;
+
+#[derive(Component)]
+pub struct CopperCount;
+
+#[derive(Component)]
+pub struct CoalCount;
+
+#[derive(Component)]
 pub struct ShipStorageUi;
 
 #[derive(Component)]

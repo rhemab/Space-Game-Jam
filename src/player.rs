@@ -6,7 +6,7 @@ use bevy::{
 use crate::{
     BaseStorage, GameTextures, MAX_BASE_STORAGE, MAX_SHIP_STORAGE, PLAYER_SIZE, SPRITE_SCALE,
     ShipStorage, WinSize,
-    components::{Base, Gold, Movable, Player, Rock, SpriteSize, Velocity},
+    components::{Base, Coal, Copper, Gold, Iron, Movable, Player, Rock, SpriteSize, Velocity},
 };
 
 pub struct PlayerPlugin;
@@ -47,11 +47,44 @@ fn player_movement(
         (With<Player>, Without<Base>),
     >,
     base_query: Query<(&Transform, &SpriteSize), With<Base>>,
+    rock_query: Query<(&Transform, &SpriteSize), (With<Rock>, Without<Base>, Without<Player>)>,
     gold_query: Query<
         (Entity, &Transform, &SpriteSize),
         (With<Gold>, Without<Base>, Without<Rock>, Without<Player>),
     >,
-    rock_query: Query<(&Transform, &SpriteSize), (With<Rock>, Without<Base>, Without<Player>)>,
+    iron_query: Query<
+        (Entity, &Transform, &SpriteSize),
+        (
+            With<Iron>,
+            Without<Gold>,
+            Without<Base>,
+            Without<Rock>,
+            Without<Player>,
+        ),
+    >,
+    copper_query: Query<
+        (Entity, &Transform, &SpriteSize),
+        (
+            With<Copper>,
+            Without<Gold>,
+            Without<Base>,
+            Without<Rock>,
+            Without<Iron>,
+            Without<Player>,
+        ),
+    >,
+    coal_query: Query<
+        (Entity, &Transform, &SpriteSize),
+        (
+            With<Coal>,
+            Without<Gold>,
+            Without<Copper>,
+            Without<Base>,
+            Without<Rock>,
+            Without<Iron>,
+            Without<Player>,
+        ),
+    >,
 ) {
     if let Ok((mut player_vel, mut player_tf, player_size)) = player_query.single_mut() {
         let mut x = 0.0;
@@ -148,8 +181,13 @@ fn player_movement(
             ));
 
             if collision {
-                player_vel.x *= -2.0;
-                player_vel.y *= -2.0;
+                if player_vel.x != 0.0 || player_vel.y != 0.0 {
+                    player_vel.x *= -8.0;
+                    player_vel.y *= -8.0;
+                } else {
+                    player_vel.x = -8.0;
+                    player_vel.y = -8.0;
+                }
                 return;
             }
         }
@@ -183,15 +221,97 @@ fn player_movement(
             }
         }
 
+        // player collects iron
+        // check collision with iron
+        for (iron, iron_tf, iron_size) in iron_query {
+            let iron_scale = Vec2::from(iron_tf.scale.xy());
+            let player_scale = Vec2::from(player_tf.scale.xy());
+
+            let collision = Aabb2d::new(
+                iron_tf.translation.truncate(),
+                (iron_size.0 * iron_scale) / 2.0,
+            )
+            .intersects(&Aabb2d::new(
+                player_tf.translation.truncate(),
+                (player_size.0 * player_scale) / 2.0,
+            ));
+
+            if collision {
+                let mut ship_total = ship_storage.gold;
+                ship_total += ship_storage.iron;
+                ship_total += ship_storage.copper;
+                ship_total += ship_storage.coal;
+
+                if ship_total < MAX_SHIP_STORAGE {
+                    commands.entity(iron).despawn();
+                    ship_storage.iron += 1;
+                }
+                return;
+            }
+        }
+
+        // player collects copper
+        // check collision with copper
+        for (copper, copper_tf, copper_size) in copper_query {
+            let copper_scale = Vec2::from(copper_tf.scale.xy());
+            let player_scale = Vec2::from(player_tf.scale.xy());
+
+            let collision = Aabb2d::new(
+                copper_tf.translation.truncate(),
+                (copper_size.0 * copper_scale) / 2.0,
+            )
+            .intersects(&Aabb2d::new(
+                player_tf.translation.truncate(),
+                (player_size.0 * player_scale) / 2.0,
+            ));
+
+            if collision {
+                let mut ship_total = ship_storage.gold;
+                ship_total += ship_storage.iron;
+                ship_total += ship_storage.copper;
+                ship_total += ship_storage.coal;
+
+                if ship_total < MAX_SHIP_STORAGE {
+                    commands.entity(copper).despawn();
+                    ship_storage.copper += 1;
+                }
+                return;
+            }
+        }
+
+        // player collects coal
+        // check collision with coal
+        for (coal, coal_tf, coal_size) in coal_query {
+            let coal_scale = Vec2::from(coal_tf.scale.xy());
+            let player_scale = Vec2::from(player_tf.scale.xy());
+
+            let collision = Aabb2d::new(
+                coal_tf.translation.truncate(),
+                (coal_size.0 * coal_scale) / 2.0,
+            )
+            .intersects(&Aabb2d::new(
+                player_tf.translation.truncate(),
+                (player_size.0 * player_scale) / 2.0,
+            ));
+
+            if collision {
+                let mut ship_total = ship_storage.gold;
+                ship_total += ship_storage.iron;
+                ship_total += ship_storage.copper;
+                ship_total += ship_storage.coal;
+
+                if ship_total < MAX_SHIP_STORAGE {
+                    commands.entity(coal).despawn();
+                    ship_storage.coal += 1;
+                }
+                return;
+            }
+        }
+
         player_vel.x = x;
         player_vel.y = y;
     }
 }
-
-// buyers make offers
-// offers expire
-// player spends money to run ship
-// market fluctuations
 
 fn unload_at_base(
     mut ship_storage: ResMut<ShipStorage>,

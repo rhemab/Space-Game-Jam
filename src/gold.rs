@@ -21,12 +21,16 @@ fn gold_spawn(
     win_size: Res<WinSize>,
     gold_query: Query<&Gold>,
 ) {
-    if gold_query.iter().len() >= MAX_GOLD {
+    use rand::Rng;
+    let mut rng = rand::rng();
+
+    // 25% chance to spawn gold
+    let chance = rng.random_range(0..2000);
+
+    if chance > 0 || gold_query.iter().len() >= MAX_GOLD {
         return;
     }
 
-    use rand::Rng;
-    let mut rng = rand::rng();
     let offset = 0.0;
     let w_span = win_size.w / 2.0 + offset;
     let h_span = win_size.h / 2.0 + offset;

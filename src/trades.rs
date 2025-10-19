@@ -50,7 +50,7 @@ fn trades_spawn(mut commands: Commands) {
                     width: Val::Px(250.0),
                     ..default()
                 },
-                BackgroundColor(Color::srgb(0.04, 0.04, 0.04)),
+                BackgroundColor(Color::srgba(0.04, 0.04, 0.04, 0.8)),
                 children![
                     (
                         Trade1,

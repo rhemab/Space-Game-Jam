@@ -1,8 +1,12 @@
 use bevy::prelude::*;
 
 use crate::{
-    BaseStorage, GameTextures, PlayerCash, SPRITE_SCALE, ShipStorage, WinSize,
-    components::{BaseStorageUi, PlayerCashUi, ShipStorageUi, Stats},
+    BaseStorage, GameTextures, MAX_BASE_STORAGE, MAX_SHIP_STORAGE, PlayerCash, SPRITE_SCALE,
+    ShipStorage, WinSize,
+    components::{
+        BaseStorageUi, CoalCount, CopperCount, GoldCount, IronCount, PlayerCashUi, ShipStorageUi,
+        Stats,
+    },
 };
 
 use thousands::Separable;
@@ -28,6 +32,70 @@ fn stats_spawn(mut commands: Commands, game_textures: Res<GameTextures>, win_siz
             },
         ))
         .insert(Stats);
+
+    commands.spawn((
+        Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            align_items: AlignItems::End,
+            justify_content: JustifyContent::Start,
+            ..default()
+        },
+        children![
+            (
+                GoldCount,
+                Text::default(),
+                BackgroundColor(Color::srgba(0.04, 0.04, 0.04, 0.8)),
+                TextFont {
+                    font_size: 12.0,
+                    ..Default::default()
+                },
+                Node {
+                    margin: UiRect::all(Val::Px(13.0)),
+                    ..default()
+                },
+            ),
+            (
+                IronCount,
+                Text::default(),
+                BackgroundColor(Color::srgba(0.04, 0.04, 0.04, 0.8)),
+                TextFont {
+                    font_size: 12.0,
+                    ..Default::default()
+                },
+                Node {
+                    margin: UiRect::all(Val::Px(13.0)),
+                    ..default()
+                },
+            ),
+            (
+                CopperCount,
+                Text::default(),
+                BackgroundColor(Color::srgba(0.04, 0.04, 0.04, 0.8)),
+                TextFont {
+                    font_size: 12.0,
+                    ..Default::default()
+                },
+                Node {
+                    margin: UiRect::all(Val::Px(13.0)),
+                    ..default()
+                },
+            ),
+            (
+                CoalCount,
+                Text::default(),
+                BackgroundColor(Color::srgba(0.04, 0.04, 0.04, 0.8)),
+                TextFont {
+                    font_size: 12.0,
+                    ..Default::default()
+                },
+                Node {
+                    margin: UiRect::all(Val::Px(13.0)),
+                    ..default()
+                },
+            )
+        ],
+    ));
 
     commands.spawn((
         Node {
@@ -83,9 +151,9 @@ fn update_stats(
     ship_storage: Res<ShipStorage>,
     base_storage: Res<BaseStorage>,
     player_cash: Res<PlayerCash>,
-    mut ship_storage_ui: Query<&mut Text, (With<ShipStorageUi>, Without<BaseStorageUi>)>,
-    mut base_storage_ui: Query<&mut Text, With<BaseStorageUi>>,
-    mut player_cash_ui: Query<
+    mut ship_storage_ui: Single<&mut Text, (With<ShipStorageUi>, Without<BaseStorageUi>)>,
+    mut base_storage_ui: Single<&mut Text, With<BaseStorageUi>>,
+    mut player_cash_ui: Single<
         &mut Text,
         (
             With<PlayerCashUi>,
@@ -93,14 +161,77 @@ fn update_stats(
             Without<BaseStorageUi>,
         ),
     >,
+    mut gold_count: Single<
+        &mut Text,
+        (
+            With<GoldCount>,
+            Without<PlayerCashUi>,
+            Without<ShipStorageUi>,
+            Without<BaseStorageUi>,
+        ),
+    >,
+    mut iron_count: Single<
+        &mut Text,
+        (
+            With<IronCount>,
+            Without<GoldCount>,
+            Without<PlayerCashUi>,
+            Without<ShipStorageUi>,
+            Without<BaseStorageUi>,
+        ),
+    >,
+    mut copper_count: Single<
+        &mut Text,
+        (
+            With<CopperCount>,
+            Without<IronCount>,
+            Without<GoldCount>,
+            Without<PlayerCashUi>,
+            Without<ShipStorageUi>,
+            Without<BaseStorageUi>,
+        ),
+    >,
+    mut coal_count: Single<
+        &mut Text,
+        (
+            With<CoalCount>,
+            Without<CopperCount>,
+            Without<IronCount>,
+            Without<GoldCount>,
+            Without<PlayerCashUi>,
+            Without<ShipStorageUi>,
+            Without<BaseStorageUi>,
+        ),
+    >,
 ) {
-    for mut text in &mut ship_storage_ui {
-        **text = format!("{}/10", ship_storage.gold);
-    }
-    for mut text in &mut base_storage_ui {
-        **text = format!(" {}/100", base_storage.gold);
-    }
-    for mut text in &mut player_cash_ui {
-        **text = format!("${}", player_cash.0.separate_with_commas());
-    }
+    let mut ship_total = ship_storage.gold;
+    ship_total += ship_storage.iron;
+    ship_total += ship_storage.copper;
+    ship_total += ship_storage.coal;
+
+    let mut base_total = base_storage.gold;
+    base_total += base_storage.iron;
+    base_total += base_storage.copper;
+    base_total += base_storage.coal;
+
+    let mut gold = gold_count.into_inner();
+    gold.0 = format!("Gold: {}", ship_storage.gold + base_storage.gold);
+
+    let mut iron = iron_count.into_inner();
+    iron.0 = format!("Iron: {}", ship_storage.iron + base_storage.iron);
+
+    let mut copper = copper_count.into_inner();
+    copper.0 = format!("Copper: {}", ship_storage.copper + base_storage.copper);
+
+    let mut coal = coal_count.into_inner();
+    coal.0 = format!("Coal: {}", ship_storage.coal + base_storage.coal);
+
+    let mut ship_storage_text = ship_storage_ui.into_inner();
+    ship_storage_text.0 = format!("{}/{}", ship_total, MAX_SHIP_STORAGE);
+
+    let mut base_storage_text = base_storage_ui.into_inner();
+    base_storage_text.0 = format!(" {}/{}", base_total, MAX_BASE_STORAGE);
+
+    let mut player_cash_text = player_cash_ui.into_inner();
+    player_cash_text.0 = format!("${}", player_cash.0.separate_with_commas());
 }
