@@ -89,7 +89,7 @@ struct PlayerCash(u32);
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::srgb(0.04, 0.04, 0.04)))
-        .insert_resource(PlayerCash(0))
+        .insert_resource(PlayerCash(500))
         .insert_resource(ShipStorage {
             gold: 0,
             iron: 0,

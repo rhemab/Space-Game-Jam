@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
-use crate::{
-    BaseStorage, PlayerCash, ShipStorage,
-    components::{BaseStorageUi, PlayerCashUi, ShipStorageUi},
-};
+use crate::{BaseStorage, PlayerCash, components::MaintenanceTimer};
 
 use thousands::Separable;
 
@@ -40,10 +37,14 @@ fn generate_trades(
     mut offers: ResMut<CurrentOffers>,
     mut base: ResMut<BaseStorage>,
     mut cash: ResMut<PlayerCash>,
+    maintenance_timer: Single<&MaintenanceTimer>,
 ) -> Result {
+    if maintenance_timer.0.is_finished() {
+        offers.0.remove(0);
+    }
     egui::Window::new("Trade").show(contexts.ctx_mut()?, |ui| {
         // only show 6 offers at a time
-        if offers.0.len() < 10 {
+        if offers.0.len() < 6 {
             // generate a random offer
             use rand::Rng;
             let mut rng = rand::rng();

@@ -4,8 +4,8 @@ use crate::{
     BaseStorage, GameTextures, MAX_BASE_STORAGE, MAX_SHIP_STORAGE, PlayerCash, SPRITE_SCALE,
     ShipStorage, WinSize,
     components::{
-        BaseStorageUi, CoalCount, CopperCount, GoldCount, IronCount, PlayerCashUi, ShipStorageUi,
-        Stats,
+        BaseStorageUi, CoalCount, CopperCount, GoldCount, IronCount, MaintenanceTimer,
+        PlayerCashUi, ShipStorageUi, Stats,
     },
 };
 
@@ -145,12 +145,16 @@ fn stats_spawn(mut commands: Commands, game_textures: Res<GameTextures>, win_siz
             ]
         )],
     ));
+
+    commands.spawn(MaintenanceTimer::default());
 }
 
 fn update_stats(
+    time: Res<Time>,
+    mut maintenance_timer: Single<&mut MaintenanceTimer>,
     ship_storage: Res<ShipStorage>,
     base_storage: Res<BaseStorage>,
-    player_cash: Res<PlayerCash>,
+    mut player_cash: ResMut<PlayerCash>,
     ship_storage_ui: Single<&mut Text, (With<ShipStorageUi>, Without<BaseStorageUi>)>,
     base_storage_ui: Single<&mut Text, With<BaseStorageUi>>,
     player_cash_ui: Single<
@@ -204,6 +208,12 @@ fn update_stats(
         ),
     >,
 ) {
+    // add ship maintenance costs: $100/30sec
+    maintenance_timer.0.tick(time.delta());
+    if maintenance_timer.0.is_finished() {
+        player_cash.0 -= 100;
+    }
+
     let mut ship_total = ship_storage.gold;
     ship_total += ship_storage.iron;
     ship_total += ship_storage.copper;
@@ -215,16 +225,16 @@ fn update_stats(
     base_total += base_storage.coal;
 
     let mut gold = gold_count.into_inner();
-    gold.0 = format!("Gold: {}", ship_storage.gold + base_storage.gold);
+    gold.0 = format!("Gold: {}", base_storage.gold);
 
     let mut iron = iron_count.into_inner();
-    iron.0 = format!("Iron: {}", ship_storage.iron + base_storage.iron);
+    iron.0 = format!("Iron: {}", base_storage.iron);
 
     let mut copper = copper_count.into_inner();
-    copper.0 = format!("Copper: {}", ship_storage.copper + base_storage.copper);
+    copper.0 = format!("Copper: {}", base_storage.copper);
 
     let mut coal = coal_count.into_inner();
-    coal.0 = format!("Coal: {}", ship_storage.coal + base_storage.coal);
+    coal.0 = format!("Coal: {}", base_storage.coal);
 
     let mut ship_storage_text = ship_storage_ui.into_inner();
     ship_storage_text.0 = format!("{}/{}", ship_total, MAX_SHIP_STORAGE);

@@ -1,4 +1,8 @@
-use bevy::{math::Vec2, prelude::Component};
+use bevy::{
+    math::Vec2,
+    prelude::Component,
+    time::{Timer, TimerMode},
+};
 
 #[derive(Component)]
 pub struct Player;
@@ -46,9 +50,6 @@ pub struct BaseStorageUi;
 pub struct PlayerCashUi;
 
 #[derive(Component)]
-pub struct Trades;
-
-#[derive(Component)]
 pub struct Velocity {
     pub x: f32,
     pub y: f32,
@@ -64,5 +65,14 @@ pub struct SpriteSize(pub Vec2);
 impl From<(f32, f32)> for SpriteSize {
     fn from(value: (f32, f32)) -> Self {
         SpriteSize(Vec2::new(value.0, value.1))
+    }
+}
+
+#[derive(Component)]
+pub struct MaintenanceTimer(pub Timer);
+
+impl Default for MaintenanceTimer {
+    fn default() -> Self {
+        Self(Timer::from_seconds(30.0, TimerMode::Repeating))
     }
 }
