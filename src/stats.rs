@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    BaseStorage, GameTextures, MAX_BASE_STORAGE, MAX_SHIP_STORAGE, PlayerCash, SPRITE_SCALE,
-    ShipStorage, WinSize,
+    BaseStorage, GameOver, GameTextures, MAX_BASE_STORAGE, MAX_SHIP_STORAGE, PlayerCash,
+    SPRITE_SCALE, ShipStorage, WinSize,
     components::{
         BaseStorageUi, CoalCount, CopperCount, GoldCount, IronCount, MaintenanceTimer,
         PlayerCashUi, ShipStorageUi, Stats,
@@ -151,6 +151,7 @@ fn stats_spawn(mut commands: Commands, game_textures: Res<GameTextures>, win_siz
 
 fn update_stats(
     time: Res<Time>,
+    mut game_over: ResMut<GameOver>,
     mut maintenance_timer: Single<&mut MaintenanceTimer>,
     ship_storage: Res<ShipStorage>,
     base_storage: Res<BaseStorage>,
@@ -211,7 +212,11 @@ fn update_stats(
     // add ship maintenance costs: $100/30sec
     maintenance_timer.0.tick(time.delta());
     if maintenance_timer.0.is_finished() {
-        player_cash.0 -= 100;
+        if player_cash.0 >= 100 {
+            player_cash.0 -= 100;
+        } else {
+            game_over.0 = true;
+        }
     }
 
     let mut ship_total = ship_storage.gold;
@@ -243,5 +248,5 @@ fn update_stats(
     base_storage_text.0 = format!(" {}/{}", base_total, MAX_BASE_STORAGE);
 
     let mut player_cash_text = player_cash_ui.into_inner();
-    player_cash_text.0 = format!("${}", player_cash.0.separate_with_commas());
+    player_cash_text.0 = format!("{}", player_cash.0.separate_with_commas());
 }

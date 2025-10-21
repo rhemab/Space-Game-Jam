@@ -1,128 +1,156 @@
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, EguiPlugin, EguiPrimaryContextPass, egui};
 
-use crate::{BaseStorage, PlayerCash, components::MaintenanceTimer};
+use crate::{BaseStorage, GameOver, PlayerCash, components::MarketTimer};
 
 use thousands::Separable;
 
-const RESOURCE_LIST: [(&str, u32); 5] = [
-    ("Gold", 4200),
-    ("Iron", 500),
-    ("Copper", 500),
-    ("Coal", 1200),
-    ("Galactic Credits", 1),
-];
+enum ResourceType {
+    Gold,
+    Iron,
+    Copper,
+    Coal,
+}
 
-pub struct Offer {
-    title: String,
-    give: usize,
-    give_qty: u32,
-    get: u32,
+pub struct Resource {
+    res_type: ResourceType,
+    name: String,
+    price: u32,
 }
 
 #[derive(Resource)]
-pub struct CurrentOffers(Vec<Offer>);
+pub struct ResourceList(Vec<Resource>);
 
 pub struct TradesPlugin;
 impl Plugin for TradesPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(CurrentOffers(vec![]))
-            .add_plugins(EguiPlugin::default())
-            .add_systems(EguiPrimaryContextPass, generate_trades);
+        app.insert_resource(ResourceList(vec![
+            Resource {
+                res_type: ResourceType::Gold,
+                name: format!("Gold"),
+                price: 4200,
+            },
+            Resource {
+                res_type: ResourceType::Iron,
+                name: format!("Iron"),
+                price: 500,
+            },
+            Resource {
+                res_type: ResourceType::Copper,
+                name: format!("Copper"),
+                price: 600,
+            },
+            Resource {
+                res_type: ResourceType::Coal,
+                name: format!("Coal"),
+                price: 1200,
+            },
+        ]))
+        .add_plugins(EguiPlugin::default())
+        .add_systems(EguiPrimaryContextPass, generate_market);
     }
 }
 
-fn generate_trades(
+fn generate_market(
     mut contexts: EguiContexts,
-    mut offers: ResMut<CurrentOffers>,
+    mut market_timer: Single<&mut MarketTimer>,
     mut base: ResMut<BaseStorage>,
     mut cash: ResMut<PlayerCash>,
-    maintenance_timer: Single<&MaintenanceTimer>,
+    mut resource_list: ResMut<ResourceList>,
+    time: Res<Time>,
+    game_over: Res<GameOver>,
 ) -> Result {
-    if maintenance_timer.0.is_finished() {
-        offers.0.remove(0);
+    if game_over.0 {
+        egui::Window::new("Game Over").show(contexts.ctx_mut()?, |ui| {
+            ui.label("You ran out of credits...");
+        });
+        return Ok(());
     }
-    egui::Window::new("Trade").show(contexts.ctx_mut()?, |ui| {
-        // only show 6 offers at a time
-        if offers.0.len() < 6 {
-            // generate a random offer
-            use rand::Rng;
-            let mut rng = rand::rng();
+    market_timer.0.tick(time.delta());
+    egui::Window::new("Market").show(contexts.ctx_mut()?, |ui| {
+        for resource in &mut resource_list.0 {
+            if market_timer.0.is_finished() {
+                // update prices
+                // high chance of going up slow
+                // low chance of crash
+                use rand::Rng;
+                let mut rng = rand::rng();
 
-            let i = rng.random_range(0..4);
-            let x = RESOURCE_LIST[i];
-            let x_qty = rng.random_range(1..10);
+                // chance to go up:
+                let positive = rng.random_bool(0.90);
 
-            // y is cash
-            let y = RESOURCE_LIST[4];
-            let y_qty = x.1 * x_qty;
+                if positive {
+                    let price_factor = rng.random_range(30..100); // between 1% - 3%
+                    let change = resource.price / price_factor;
+                    resource.price += change;
+                } else {
+                    let change;
+                    match resource.res_type {
+                        ResourceType::Gold => {
+                            change = resource.price / 20; // -5%
+                        }
+                        _ => {
+                            change = resource.price / 10; // -10%
+                        }
+                    }
+                    resource.price -= change;
+                }
+            }
 
-            let new_offer = Offer {
-                title: format!(
-                    "Trade {} {} for {} {}",
-                    x_qty.separate_with_commas(),
-                    x.0,
-                    y_qty.separate_with_commas(),
-                    y.0
-                ),
-                give: i,
-                give_qty: x_qty,
-                get: y_qty,
-            };
-
-            offers.0.push(new_offer);
-        }
-
-        let mut to_remove = vec![];
-
-        for (i, offer) in offers.0.iter().enumerate() {
+            // generate ui
             ui.horizontal(|ui| {
-                if ui.button("Yes").clicked() {
-                    let mut success = false;
-                    let item_to_give = RESOURCE_LIST[offer.give].0;
-                    match item_to_give {
-                        "Gold" => {
-                            if base.gold >= offer.give_qty {
-                                base.gold -= offer.give_qty;
-                                success = true;
+                if ui.button("Buy").clicked() {
+                    if cash.0 >= resource.price {
+                        cash.0 -= resource.price;
+                        match resource.res_type {
+                            ResourceType::Gold => {
+                                base.gold += 1;
+                            }
+                            ResourceType::Iron => {
+                                base.iron += 1;
+                            }
+                            ResourceType::Copper => {
+                                base.copper += 1;
+                            }
+                            ResourceType::Coal => {
+                                base.coal += 1;
                             }
                         }
-                        "Iron" => {
-                            if base.iron >= offer.give_qty {
-                                base.iron -= offer.give_qty;
-                                success = true;
-                            }
-                        }
-                        "Copper" => {
-                            if base.copper >= offer.give_qty {
-                                base.copper -= offer.give_qty;
-                                success = true;
-                            }
-                        }
-                        "Coal" => {
-                            if base.coal >= offer.give_qty {
-                                base.coal -= offer.give_qty;
-                                success = true;
-                            }
-                        }
-                        _ => {}
-                    }
-                    if success {
-                        to_remove.push(i);
-                        cash.0 += offer.get;
                     }
                 }
-                if ui.button("No").clicked() {
-                    to_remove.push(i);
+                if ui.button("Sell").clicked() {
+                    match resource.res_type {
+                        ResourceType::Gold => {
+                            if base.gold >= 1 {
+                                base.gold -= 1;
+                                cash.0 += resource.price;
+                            }
+                        }
+                        ResourceType::Iron => {
+                            if base.iron >= 1 {
+                                base.iron -= 1;
+                                cash.0 += resource.price;
+                            }
+                        }
+                        ResourceType::Copper => {
+                            if base.copper >= 1 {
+                                base.copper -= 1;
+                                cash.0 += resource.price;
+                            }
+                        }
+                        ResourceType::Coal => {
+                            if base.coal >= 1 {
+                                base.coal -= 1;
+                                cash.0 += resource.price;
+                            }
+                        }
+                    }
                 }
-                ui.label(&offer.title);
+                ui.label(&resource.name);
+                ui.label(format!("{}", resource.price.separate_with_commas()));
+                ui.label("Galactic Credits");
             });
             ui.separator();
-        }
-
-        // Remove items in reverse order to avoid shifting indices
-        for i in to_remove.iter().rev() {
-            offers.0.remove(*i);
         }
     });
     Ok(())

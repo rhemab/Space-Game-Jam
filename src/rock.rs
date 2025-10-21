@@ -54,8 +54,8 @@ fn rock_spawn(
             .insert(Rock)
             .insert(Movable { auto_despawn: true })
             .insert(Velocity {
-                x: x / 10000.0,
-                y: y / 10000.0,
+                x: x / 5000.0,
+                y: y / 5000.0,
             })
             .insert(SpriteSize::from(rock.1));
     }

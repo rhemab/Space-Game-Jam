@@ -14,6 +14,8 @@ mod rock;
 mod stats;
 mod trades;
 
+const SOUND_TRACK: &str = "sound-track.mp3";
+
 const PLAYER_SPRITE: &str = "player.png";
 const GOLD_SPRITE: &str = "gold.png";
 const IRON_SPRITE: &str = "iron.png";
@@ -84,11 +86,15 @@ struct BaseStorage {
 }
 
 #[derive(Resource)]
+struct GameOver(bool);
+
+#[derive(Resource)]
 struct PlayerCash(u32);
 
 fn main() {
     App::new()
         .insert_resource(ClearColor(Color::srgb(0.04, 0.04, 0.04)))
+        .insert_resource(GameOver(false))
         .insert_resource(PlayerCash(500))
         .insert_resource(ShipStorage {
             gold: 0,
@@ -129,6 +135,14 @@ fn setup(
     query: Query<&Window, With<PrimaryWindow>>,
 ) {
     commands.spawn(Camera2d);
+    commands.spawn((
+        AudioPlayer::new(asset_server.load(SOUND_TRACK)),
+        PlaybackSettings {
+            mode: bevy::audio::PlaybackMode::Loop,
+            ..default()
+        },
+    ));
+    commands.spawn(MarketTimer::default());
 
     // capture window size
     let Ok(primary) = query.single() else {

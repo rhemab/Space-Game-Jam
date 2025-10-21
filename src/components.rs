@@ -69,6 +69,15 @@ impl From<(f32, f32)> for SpriteSize {
 }
 
 #[derive(Component)]
+pub struct MarketTimer(pub Timer);
+
+impl Default for MarketTimer {
+    fn default() -> Self {
+        Self(Timer::from_seconds(2.0, TimerMode::Repeating))
+    }
+}
+
+#[derive(Component)]
 pub struct MaintenanceTimer(pub Timer);
 
 impl Default for MaintenanceTimer {
